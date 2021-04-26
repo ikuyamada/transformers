@@ -100,6 +100,7 @@ def convert_luke_checkpoint(checkpoint_path, metadata_path, entity_vocab_path, p
 
     print("Saving PyTorch model to {}".format(pytorch_dump_folder_path))
     model.save_pretrained(pytorch_dump_folder_path)
+    tokenizer.save_pretrained(pytorch_dump_folder_path)
 
 
 def load_entity_vocab(entity_vocab_path):
