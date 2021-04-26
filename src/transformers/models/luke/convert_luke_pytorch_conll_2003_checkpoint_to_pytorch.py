@@ -29,6 +29,7 @@ def convert_luke_checkpoint(checkpoint_path, metadata_path, entity_vocab_path, p
     # Load configuration defined in the metadata file
     with open(metadata_path) as metadata_file:
         metadata = json.load(metadata_file)
+    bert_model_name = metadata['model_config'].pop('bert_model_name')
     config = LukeConfig(use_entity_aware_attention=True, **metadata["model_config"])
 
     # Load in the weights from the checkpoint_path
@@ -37,7 +38,7 @@ def convert_luke_checkpoint(checkpoint_path, metadata_path, entity_vocab_path, p
     # Load the entity vocab file
     entity_vocab = load_entity_vocab(entity_vocab_path)
 
-    tokenizer = RobertaTokenizer.from_pretrained(metadata["model_config"]["bert_model_name"])
+    tokenizer = RobertaTokenizer.from_pretrained(bert_model_name)
 
     # Add special tokens to the token vocabulary for downstream tasks
     entity_token_1 = AddedToken("<ent>", lstrip=False, rstrip=False)
@@ -53,6 +54,8 @@ def convert_luke_checkpoint(checkpoint_path, metadata_path, entity_vocab_path, p
     tokenizer = LukeTokenizer.from_pretrained(pytorch_dump_folder_path)
 
     config.num_labels = 5
+    config.id2label = {0: "NIL", 1: "MISC", 2: "PER", 3:"ORG", 4:"LOC"}
+    config.label2id = {v: k for k, v in config.id2label.items()}
 
     orig_word_emb = state_dict["embeddings.word_embeddings.weight"]
     state_dict["embeddings.word_embeddings.weight"] = torch.cat([orig_word_emb, torch.zeros(2, orig_word_emb.size(1))])

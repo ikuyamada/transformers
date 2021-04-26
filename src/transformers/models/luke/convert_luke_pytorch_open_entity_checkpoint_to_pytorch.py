@@ -29,7 +29,20 @@ def convert_luke_checkpoint(checkpoint_path, metadata_path, entity_vocab_path, p
     # Load configuration defined in the metadata file
     with open(metadata_path) as metadata_file:
         metadata = json.load(metadata_file)
+    bert_model_name = metadata['model_config'].pop('bert_model_name')
     config = LukeConfig(use_entity_aware_attention=True, **metadata["model_config"])
+    config.id2label = {
+        0: "entity",
+        1: "event",
+        2: "group",
+        3: "location",
+        4: "object",
+        5: "organization",
+        6: "person",
+        7: "place",
+        8: "time",
+    }
+    config.label2id = {v: k for k, v in config.id2label.items()}
 
     # Load in the weights from the checkpoint_path
     state_dict = torch.load(checkpoint_path, map_location="cpu")
@@ -37,7 +50,7 @@ def convert_luke_checkpoint(checkpoint_path, metadata_path, entity_vocab_path, p
     # Load the entity vocab file
     entity_vocab = load_entity_vocab(entity_vocab_path)
 
-    tokenizer = RobertaTokenizer.from_pretrained(metadata["model_config"]["bert_model_name"])
+    tokenizer = RobertaTokenizer.from_pretrained(bert_model_name)
 
     # Add special tokens to the token vocabulary for downstream tasks
     entity_token_1 = AddedToken("<ent>", lstrip=False, rstrip=False)

@@ -29,6 +29,7 @@ def convert_luke_checkpoint(checkpoint_path, metadata_path, entity_vocab_path, p
     # Load configuration defined in the metadata file
     with open(metadata_path) as metadata_file:
         metadata = json.load(metadata_file)
+    bert_model_name = metadata['model_config'].pop('bert_model_name')
     config = LukeConfig(use_entity_aware_attention=True, **metadata["model_config"])
 
     # Load in the weights from the checkpoint_path
@@ -37,7 +38,7 @@ def convert_luke_checkpoint(checkpoint_path, metadata_path, entity_vocab_path, p
     # Load the entity vocab file
     entity_vocab = load_entity_vocab(entity_vocab_path)
 
-    tokenizer = RobertaTokenizer.from_pretrained(metadata["model_config"]["bert_model_name"])
+    tokenizer = RobertaTokenizer.from_pretrained(bert_model_name)
 
     # Add special tokens to the token vocabulary for downstream tasks
     entity_token_1 = AddedToken("<ent>", lstrip=False, rstrip=False)
@@ -53,6 +54,51 @@ def convert_luke_checkpoint(checkpoint_path, metadata_path, entity_vocab_path, p
     tokenizer = LukeTokenizer.from_pretrained(pytorch_dump_folder_path)
 
     config.num_labels = 42
+    config.id2label = {
+        0: "no_relation",
+        1: "org:alternate_names",
+        2: "org:city_of_headquarters",
+        3: "org:country_of_headquarters",
+        4: "org:dissolved",
+        5: "org:founded",
+        6: "org:founded_by",
+        7: "org:member_of",
+        8: "org:members",
+        9: "org:number_of_employees/members",
+        10: "org:parents",
+        11: "org:political/religious_affiliation",
+        12: "org:shareholders",
+        13: "org:stateorprovince_of_headquarters",
+        14: "org:subsidiaries",
+        15: "org:top_members/employees",
+        16: "org:website",
+        17: "per:age",
+        18: "per:alternate_names",
+        19: "per:cause_of_death",
+        20: "per:charges",
+        21: "per:children",
+        22: "per:cities_of_residence",
+        23: "per:city_of_birth",
+        24: "per:city_of_death",
+        25: "per:countries_of_residence",
+        26: "per:country_of_birth",
+        27: "per:country_of_death",
+        28: "per:date_of_birth",
+        29: "per:date_of_death",
+        30: "per:employee_of",
+        31: "per:origin",
+        32: "per:other_family",
+        33: "per:parents",
+        34: "per:religion",
+        35: "per:schools_attended",
+        36: "per:siblings",
+        37: "per:spouse",
+        38: "per:stateorprovince_of_birth",
+        39: "per:stateorprovince_of_death",
+        40: "per:stateorprovinces_of_residence",
+        41: "per:title",
+    }
+    config.label2id = {v: k for k, v in config.id2label.items()}
 
     orig_entity_emb = state_dict["entity_embeddings.entity_embeddings.weight"]
     new_entity_emb = torch.zeros(config.entity_vocab_size, config.entity_emb_size)
